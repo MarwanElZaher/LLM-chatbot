@@ -1,8 +1,13 @@
 import "./App.css";
 import Dictaphone from "./Dictaphone";
+import MapComponent from "./MapComponent";
 
 const App = () => {
-  return <Dictaphone />;
+  return (
+    <div className="app-container">
+    <MapComponent/>
+    <Dictaphone />
+  </div>)
 };
 
 export default App;
