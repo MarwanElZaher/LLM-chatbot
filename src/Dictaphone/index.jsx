@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { getChatResponse } from '../gemini';
-import { extractMessage } from '../utils/helperFunctions';
+import { setResponse, setError, clearResponse } from '../features/modelSlice'; // Adjust the path
+import { getChatResponse } from '../gemini'; // Make sure this is correctly imported
 
 const Dictaphone = () => {
-  const [response, setResponse] = useState(null)
-  const [lastTranscript, setLastTranscript] = useState("")
+  const dispatch = useDispatch();
+  const { action, target, message, error } = useSelector((state) => state.model);
+  const [lastTranscript, setLastTranscript] = useState("");
+
   const {
     transcript,
     listening,
@@ -22,19 +25,21 @@ const Dictaphone = () => {
 
   const startRecording = () => {
     resetTranscript();
-    setResponse(null)
-    SpeechRecognition.startListening({ language: "ar-eg", continues: true })
-  }
+    dispatch(clearResponse());
+    SpeechRecognition.startListening({ language: "ar-eg", continues: true });
+  };
+
   const stopRecording = () => {
-    SpeechRecognition.stopListening()
-  }
+    SpeechRecognition.stopListening();
+  };
+
   const handleSend = async (text) => {
     try {
-      const chatResponse = await getChatResponse(text);
-      console.log(chatResponse)
-      setResponse(chatResponse);
-    } catch (error) {
-      console.error('Error fetching response from OpenAI:', error);
+      const response = await getChatResponse(text);
+      dispatch(setResponse(response));
+    } catch (err) {
+      dispatch(setError('Error fetching response'));
+      console.error('Error fetching response:', err);
     }
   };
 
@@ -45,23 +50,20 @@ const Dictaphone = () => {
   return (
     <div className='chat-model-container'>
       <p>Microphone: {listening ? 'on' : 'off'}</p>
-      <button onClick={() => {
-       startRecording()
-      }}>Start</button>
-      <button onClick={() => {
-        stopRecording()
-      }}>Stop</button>
+      <button onClick={startRecording}>Start</button>
+      <button onClick={stopRecording}>Stop</button>
       <div className='message-container'>
-        <label>message:</label>
-        <p> {transcript}</p>
+        <label>Message:</label>
+        <p>{transcript}</p>
       </div>
-      
-
       <div className='response-container'>
-      {response && <p>Response: {extractMessage(response)}</p>}
+        {error && <p className='error-message'>Error: {error}</p>}
+        {message && <p>Response: {message}</p>}
+        {action && <p>Action: {action}</p>}
+        {target && <p>Target: {target}</p>}
       </div>
-      
     </div>
   );
 };
+
 export default Dictaphone;
